@@ -152,6 +152,34 @@ class Database:
                 return False
             return verify_password(password, h_row["value"], s_row["value"])
 
+    def get_employee_access_code(self) -> str:
+        """Lấy mã truy cập nội bộ cho nhân viên (đã giải mã)."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT value FROM system_settings WHERE key = 'employee_access_code'")
+            row = cur.fetchone()
+            if row and row["value"]:
+                return decrypt_text(row["value"], self._get_db_seed())
+            default_code = "hoadon2026"
+            self.set_employee_access_code(default_code)
+            return default_code
+
+    def set_employee_access_code(self, code: str) -> bool:
+        """Thiết lập hoặc đổi mã truy cập nội bộ cho nhân viên (lưu mã hóa)."""
+        enc_code = encrypt_text(code.strip(), self._get_db_seed())
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('employee_access_code', ?)", (enc_code,))
+            conn.commit()
+            return True
+
+    def verify_employee_access_code(self, code: str) -> bool:
+        """Kiểm tra mã truy cập nội bộ của nhân viên."""
+        if not code:
+            return False
+        current_code = self.get_employee_access_code()
+        return secrets.compare_digest(code.strip(), current_code.strip())
+
     def _decrypt_biz_row(self, row):
         if not row:
             return None

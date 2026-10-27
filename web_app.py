@@ -200,6 +200,54 @@ if not db.is_admin_password_set():
                 st.rerun()
     st.stop()
 
+# ================= 3.5. CỔNG XÁC THỰC NỘI BỘ (ACCESS GATE) =================
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.markdown("<br>", unsafe_allow_html=True)
+    col_gate_left, col_gate_center, col_gate_right = st.columns([1, 2, 1])
+    with col_gate_center:
+        st.markdown("""
+        <div style="background-color: #111827; border: 1px solid #334155; border-radius: 12px; padding: 24px 20px; text-align: center; margin-bottom: 20px;">
+            <div style="font-size: 36px; margin-bottom: 6px;">🔒</div>
+            <h2 style="color: #38bdf8; font-size: 20px; font-weight: 800; margin: 0;">XÁC THỰC TRUY CẬP NỘI BỘ</h2>
+            <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">Hệ thống Quản lý & Tra cứu Hóa đơn Điện tử</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        with st.form("form_access_gate"):
+            access_code = st.text_input(
+                "Mã truy cập nội bộ (hoặc Mật khẩu Admin):",
+                type="password",
+                placeholder="Nhập mã được cấp để truy cập...",
+                help="Nhập mã nội bộ do Admin cấp cho nhân viên, hoặc mật khẩu Admin để vào quyền Quản trị."
+            )
+            submit_gate = st.form_submit_button("🚀 XÁC NHẬN VÀO HỆ THỐNG", use_container_width=True, type="primary")
+
+            if submit_gate:
+                if not access_code:
+                    st.error("Vui lòng nhập mã truy cập!")
+                elif db.verify_admin_password(access_code):
+                    st.session_state.authenticated = True
+                    st.session_state.is_admin = True
+                    st.success("Đăng nhập thành công với Quyền Quản Trị Viên (Admin)!")
+                    time.sleep(0.5)
+                    st.rerun()
+                elif db.verify_employee_access_code(access_code):
+                    st.session_state.authenticated = True
+                    st.session_state.is_admin = False
+                    st.success("Xác thực thành công! Đang chuyển vào Chế độ Nhân viên...")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error("⛔ Mã truy cập không chính xác! Bạn không được cấp quyền truy cập hệ thống này.")
+
+        st.caption("🔒 Hệ thống bảo mật nội bộ. Người không được cấp phép không thể xem bất kỳ dữ liệu nào.")
+
+    st.stop()
+
 # ================= 4. SIDEBAR (QUẢN TRỊ & KẾT NỐI THUẾ) =================
 
 with st.sidebar:
@@ -216,18 +264,23 @@ with st.sidebar:
     st.markdown("#### 🔐 Quyền Truy Cập")
     if st.session_state.is_admin:
         st.markdown('<span class="badge-admin">👑 QUẢN TRỊ VIÊN (ADMIN)</span>', unsafe_allow_html=True)
-        col_l1, col_l2 = st.columns(2)
+        col_l1, col_l2, col_l3 = st.columns(3)
         with col_l1:
-            if st.button("🔒 Khóa lại", use_container_width=True, help="Trở về chế độ Nhân viên"):
+            if st.button("🚪 Thoát", use_container_width=True, help="Đăng xuất khỏi hệ thống"):
+                st.session_state.authenticated = False
                 st.session_state.is_admin = False
                 st.rerun()
         with col_l2:
+            if st.button("🔒 Khóa", use_container_width=True, help="Về chế độ Nhân viên"):
+                st.session_state.is_admin = False
+                st.rerun()
+        with col_l3:
             with st.popover("🔑 Đổi MK"):
                 with st.form("form_change_admin_pwd"):
                     old_p = st.text_input("Mật khẩu cũ:", type="password")
                     new_p = st.text_input("Mật khẩu mới:", type="password")
                     con_p = st.text_input("Xác nhận:", type="password")
-                    if st.form_submit_button("Cập nhật"):
+                    if st.form_submit_button("Lưu"):
                         if not db.verify_admin_password(old_p):
                             st.error("Mật khẩu cũ không đúng!")
                         elif len(new_p) < 4 or new_p != con_p:
@@ -235,18 +288,41 @@ with st.sidebar:
                         else:
                             db.set_admin_password(new_p)
                             st.success("Đã đổi mật khẩu thành công!")
-    else:
-        st.markdown('<span class="badge-employee">👤 CHẾ ĐỘ NHÂN VIÊN (Khóa Admin)</span>', unsafe_allow_html=True)
-        with st.popover("🔐 Mở khóa Admin"):
-            with st.form("form_unlock_admin"):
-                admin_p = st.text_input("Mật khẩu Admin:", type="password")
-                if st.form_submit_button("Xác nhận"):
-                    if db.verify_admin_password(admin_p):
-                        st.session_state.is_admin = True
-                        st.success("Đã mở khóa quyền Admin!")
-                        st.rerun()
+
+        # Quản lý mã truy cập nhân viên (Admin only)
+        with st.expander("🛡️ Mã Truy Cập Cho Nhân Viên"):
+            current_emp_code = db.get_employee_access_code()
+            st.info(f"Mã hiện tại: **`{current_emp_code}`**")
+            with st.form("form_change_emp_code"):
+                new_emp_code = st.text_input("Đổi mã truy cập mới cho nhân viên:", placeholder="Nhập mã mới...")
+                if st.form_submit_button("Lưu Mã Mới"):
+                    if not new_emp_code or len(new_emp_code) < 3:
+                        st.error("Mã truy cập phải có ít nhất 3 ký tự!")
                     else:
-                        st.error("Mật khẩu Admin không chính xác!")
+                        db.set_employee_access_code(new_emp_code.strip())
+                        st.success(f"Đã cập nhật mã mới: {new_emp_code.strip()}")
+                        time.sleep(0.8)
+                        st.rerun()
+            st.caption("💡 Đổi mã này khi có nhân viên nghỉ việc để chặn truy cập ngay lập tức.")
+    else:
+        st.markdown('<span class="badge-employee">👤 NHÂN VIÊN ĐƯỢC CẤP PHÉP</span>', unsafe_allow_html=True)
+        col_emp1, col_emp2 = st.columns(2)
+        with col_emp1:
+            if st.button("🚪 Đăng xuất", use_container_width=True, help="Đăng xuất khỏi hệ thống"):
+                st.session_state.authenticated = False
+                st.session_state.is_admin = False
+                st.rerun()
+        with col_emp2:
+            with st.popover("👑 Mở Admin"):
+                with st.form("form_unlock_admin"):
+                    admin_p = st.text_input("Mật khẩu Admin:", type="password")
+                    if st.form_submit_button("Mở khóa"):
+                        if db.verify_admin_password(admin_p):
+                            st.session_state.is_admin = True
+                            st.success("Đã mở khóa quyền Admin!")
+                            st.rerun()
+                        else:
+                            st.error("Mật khẩu Admin không chính xác!")
 
     st.markdown("---")
 
