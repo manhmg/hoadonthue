@@ -21,3 +21,4 @@ logs/
 scratch/
 .tmp/
 *.zip
+cloudflared.exe
