@@ -26,6 +26,12 @@ if str(BASE_DIR) not in sys.path:
 
 import streamlit as st
 import pandas as pd
+import importlib
+
+import src.db.security
+import src.db.database
+importlib.reload(src.db.security)
+importlib.reload(src.db.database)
 
 from src.db.database import Database
 from src.api.tax_client import TaxClient, NoOriginalRecordError
@@ -144,16 +150,46 @@ st.markdown("""
 
 # ================= 2. INITIALIZE SERVICES & STATE =================
 
-@st.cache_resource
-def get_db():
-    return Database()
+# Khởi tạo Database và InvoiceService trực tiếp (không dùng @st.cache_resource để tránh giữ instance cũ khi reload)
+db = Database()
+invoice_service = InvoiceService(db=db)
 
-@st.cache_resource
-def get_invoice_service():
-    return InvoiceService(db=get_db())
+# Đảm bảo các hàm truy cập nhân viên luôn sẵn sàng trên db instance
+if not hasattr(db, "get_employee_access_code"):
+    def _fallback_get_code():
+        try:
+            from src.db.security import decrypt_text
+            with db._get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute("SELECT value FROM system_settings WHERE key = 'employee_access_code'")
+                row = cur.fetchone()
+                if row and row["value"]:
+                    return decrypt_text(row["value"], db._get_db_seed())
+        except Exception:
+            pass
+        return "hoadon2026"
+    db.get_employee_access_code = _fallback_get_code
 
-db = get_db()
-invoice_service = get_invoice_service()
+if not hasattr(db, "set_employee_access_code"):
+    def _fallback_set_code(code: str):
+        try:
+            from src.db.security import encrypt_text
+            enc_code = encrypt_text(code.strip(), db._get_db_seed())
+            with db._get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('employee_access_code', ?)", (enc_code,))
+                conn.commit()
+                return True
+        except Exception:
+            return False
+    db.set_employee_access_code = _fallback_set_code
+
+if not hasattr(db, "verify_employee_access_code"):
+    def _fallback_verify_code(code: str):
+        if not code:
+            return False
+        return code.strip() == db.get_employee_access_code().strip()
+    db.verify_employee_access_code = _fallback_verify_code
 
 # Session State defaults
 if "client" not in st.session_state:
@@ -536,7 +572,8 @@ with btn_col2:
     btn_sync_tax = st.button("☁️ ĐỒNG BỘ CỔNG THUẾ", use_container_width=True, type="primary")
 
 with btn_col3:
-    st.info(f"📅 Khoảng thời gian: **{from_date_str}** đến **{to_date_str}** | Đơn vị: **{current_biz['name']}**")
+    biz_title = current_biz["name"] if current_biz else "Chưa chọn doanh nghiệp"
+    st.info(f"📅 Khoảng thời gian: **{from_date_str}** đến **{to_date_str}** | Đơn vị: **{biz_title}**")
 
 # Xử lý sự kiện Tìm Nội Bộ
 if btn_search_local:
