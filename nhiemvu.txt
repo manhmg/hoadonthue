@@ -1,0 +1,7 @@
+viết code py có ui 
+vào trang này https://hoadondientu.gdt.gov.vn/
+đăng nhập bằng thông tin từng doanh nghiệp, ví dụ
+ID: 0111170818
+mật khẩu: Kaopiz2026@
+
+mục đích tải toàn bộ pdf hoá đơn điện tử mua vào theo khoảng thời gian tự chọn, ví dụ như 26/9/2026 > 25/10/2026

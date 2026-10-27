@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# PyInstaller / Build
+build/
+dist/
+*.spec.bak
+
+# Logs
+logs/
+*.log
+
+# Scratch / Temporary
+scratch/
+.tmp/
+*.zip
