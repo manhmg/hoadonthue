@@ -213,7 +213,15 @@ def load_captcha():
         st.session_state.current_ckey = ckey
         st.session_state.captcha_svg = svg
     except Exception as e:
-        st.sidebar.error(f"Lỗi tải Captcha: {e}")
+        err_str = str(e)
+        if "timed out" in err_str.lower() or "timeout" in err_str.lower():
+            st.sidebar.error(
+                "⚠️ **Cổng Thuế chặn IP nước ngoài (Timeout)!**\n\n"
+                "Cổng Thuế (`hoadondientu.gdt.gov.vn`) có Tường Lửa chặn các máy chủ đặt tại nước ngoài (như Streamlit Cloud).\n\n"
+                "👉 **Giải pháp tốt nhất:** Chạy file `Chay_Web.bat` trực tiếp trên máy tính tại Việt Nam để kết nối Cổng Thuế siêu tốc 100%!"
+            )
+        else:
+            st.sidebar.error(f"Lỗi tải Captcha: {e}")
 
 # ================= 3. ADMIN MASTER SETUP (FIRST-TIME) =================
 
