@@ -5,7 +5,10 @@ import zipfile
 import logging
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from playwright.sync_api import sync_playwright
+try:
+    from playwright.sync_api import sync_playwright
+except ImportError:
+    sync_playwright = None
 import pandas as pd
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -215,6 +218,10 @@ class InvoiceService:
         """
         Convert an HTML invoice file to PDF using headless Chromium.
         """
+        if sync_playwright is None:
+            logger.warning("Playwright is not installed. HTML to PDF conversion is not available.")
+            return False
+
         html_uri = Path(html_path).resolve().as_uri()
         with sync_playwright() as p:
             browser = self._launch_browser(p)
