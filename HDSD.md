@@ -116,29 +116,8 @@
 
 ## 4. Khởi Chạy Ứng Dụng
 
-- **Cách 1**: Double-click vào file [Chay_Tool.bat](file:///d:/Manh_Project/HoaDon/Chay_Tool.bat) trên màn hình làm việc để mở bản Desktop.
+- **Cách 1**: Double-click vào file [Chay_Tool.bat](file:///d:/Manh_Project/HoaDon/Chay_Tool.bat) trên màn hình làm việc.
 - **Cách 2**: Chạy qua dòng lệnh Terminal:
   ```bash
   python main.py
   ```
-
----
-
-## 5. Phiên Bản Web & Phát Trực Tuyến Cho Nhân Viên (Cloudflare Tunnel)
-
-### 5.1. Vì sao không nên host trực tiếp trên Cloud quốc tế (Streamlit Cloud, AWS...)?
-- Cổng Thuế của Tổng cục Thuế Việt Nam (`hoadondientu.gdt.gov.vn`) có hệ thống **Tường Lửa chặn các dải IP Datacenter nước ngoài (Geo-blocking / Anti-DDoS)**. Khi máy chủ ở nước ngoài gửi request lấy Captcha, Cổng Thuế sẽ ngắt kết nối (báo lỗi `Connection timed out`).
-- **Giải pháp tối ưu:** Ứng dụng chạy trên máy tính tại Việt Nam (có IP mạng FPT, Viettel, VNPT) ➔ Cổng Thuế mở 100%, tải Captcha và tra cứu siêu tốc.
-
-### 5.2. Cách phát Web cho nhân viên truy cập từ xa (1 Cú Click):
-1. **Khởi chạy:** Double-click vào file [Phat_Web_Online.bat](file:///d:/Manh_Project/HoaDon/Phat_Web_Online.bat).
-2. Hệ thống tự động:
-   - Khởi động máy chủ Web Streamlit nội bộ.
-   - Kích hoạt đường truyền bảo mật **Cloudflare Tunnel**.
-   - Tự động sinh ra đường link HTTPS công cộng an toàn (ví dụ: `https://xxxx.trycloudflare.com`).
-   - Tự động mở trình duyệt.
-3. **Chia sẻ cho nhân viên:**
-   - Bạn chỉ cần copy đường link `https://xxxx.trycloudflare.com` gửi cho nhân viên (có thể mở trên điện thoại, máy tính ở nhà hay bất kỳ đâu).
-   - Giao diện có Cổng xác thực: Nhân viên nhập mã truy cập (mặc định: `hoadon2026`).
-   - Quản trị viên nhập Mật khẩu Admin để vào toàn quyền cấu hình doanh nghiệp và đổi mã truy cập nhân viên bất cứ lúc nào.
-4. **Tắt ứng dụng:** Khi không dùng nữa, chỉ cần tắt cửa sổ đen hoặc nhấn `Ctrl + C`.
